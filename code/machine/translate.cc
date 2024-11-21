@@ -180,6 +180,8 @@ Machine::WriteMem(int addr, int size, int value)
 //	"size" -- the amount of memory being read or written
 // 	"writing" -- if TRUE, check the "read-only" bit in the TLB
 //----------------------------------------------------------------------
+// **G
+int Machine::f = 0;
 
 ExceptionType
 Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
@@ -188,6 +190,9 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
     unsigned int vpn, offset;
     TranslationEntry *entry;
     unsigned int pageFrame;
+    
+    //**G
+    int target; // add variable to store the target page that needs to be replaced
 
     DEBUG(dbgAddr, "\tTranslate " << virtAddr << (writing ? " , write" : " , read"));
 
@@ -210,27 +215,63 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 	if (vpn >= pageTableSize) {
 	    DEBUG(dbgAddr, "Illegal virtual page # " << virtAddr);
 	    return AddressErrorException;
-	} else if (!pageTable[vpn].valid) {
+	} 
+	
+	else if (!pageTable[vpn].valid) 
+	{
             /* 		Add Page fault code here		*/
 
-        printf("page fault\n");
-        kernel->stats->numPageFaults++;
+		printf("page fault\n");
+		kernel->stats->numPageFaults++;
 
-        int idx = 0;
-        while(idx < NumPhysPages && kernel->machine->usedPhyPage[idx] == true)
-            idx++;
-        if(idx < NumPhysPages){       // mainMemory 有空位
+		int idx = 0;
+		while(idx < NumPhysPages && kernel->machine->usedPhyPage[idx] == true)
+		    idx++;
+		if(idx < NumPhysPages){       // mainMemory 有空位
 
-        }
-        else{                       // mainMemory 沒有空位
-            if(kernel->vmType == FIFO){
+		}
+        	else{                       // mainMemory 沒有空位
+			if(kernel->vmType == FIFO)
+			{
+				//**G - FIFO
+				target = f % NumPhysPages;
+			}
+			else 
+			{
 
-            }else {
+			}
+			    
+			//**G
+			printf("page %d swapped\n",target);
+			
+			// Perform page replacement
+			if (pageTable[target].dirty) 
+			{
+				// Write the dirty page to disk
+				kernel->synchDisk->WriteSector(pageTable[target].virtualPage, &mainMemory[target * PageSize]);
+			}
 
-            }
-        }
+			// Update page table and physical memory
+			pageTable[target].valid = false;
+			pageTable[target].physicalPage = -1;
+			kernel->machine->usedPhyPage[target] = false;
 
-	}
+			// Load the new page into the freed frame
+			pageTable[vpn].valid = true;
+			pageTable[vpn].physicalPage = target;
+			kernel->machine->usedPhyPage[target] = true;
+			kernel->machine->PhyPageName[target] = pageTable[vpn].ID;
+			kernel->machine->main_tab[target] = &pageTable[vpn];
+			kernel->synchDisk->ReadSector(pageTable[vpn].virtualPage, &mainMemory[target * PageSize]);
+
+			// Update the FIFO counter (only for FIFO)
+			if (kernel->vmtype == FIFO) 
+			{
+				fifo = (fifo + 1) % NumPhysPages;
+			}
+		}
+
+}
 	entry = &pageTable[vpn];
     } else {
         for (entry = NULL, i = 0; i < TLBSize; i++)

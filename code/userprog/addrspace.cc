@@ -57,7 +57,9 @@ SwapHeader (NoffHeader *noffH)
 
 AddrSpace::AddrSpace()
 {
-
+   //** G
+   ID = (kernel->machine->ID_num) + 1;
+   kernel->machine->ID_num = kernel->machine->ID_num + 1;
     pageTable = new TranslationEntry[NumPhysPages];
     for (unsigned int i = 0; i < NumPhysPages; i++) {
 	pageTable[i].virtualPage = i;	// for now, virt page # = phys page #
@@ -140,6 +142,8 @@ AddrSpace::Load(char *fileName)
             pageTable[i].dirty = false;
             pageTable[i].readOnly = false;
             pageTable[i].count++;
+            //**G
+            pageTable[i].ID =ID;
             // 將 page i 開始，大小為 PageSize 的 code 讀進 mainMemory 中
             executable->ReadAt(&(kernel->machine->mainMemory[j * PageSize]), PageSize, noffH.code.inFileAddr + i * PageSize);
         }
@@ -159,6 +163,8 @@ AddrSpace::Load(char *fileName)
             pageTable[i].dirty = false;
             pageTable[i].readOnly = false;
             pageTable[i].count++;
+            //**G
+            pageTable[i].ID =ID;
         }
     }
     }

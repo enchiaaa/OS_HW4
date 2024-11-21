@@ -32,6 +32,8 @@ class AddrSpace {
 
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch 
+    //**G
+    int ID;				// storing the acessing page
 
   private:
     TranslationEntry *pageTable;	// Assume linear page table translation
