@@ -86,7 +86,6 @@ ExceptionHandler(ExceptionType which)
 	    break;
 	case PageFaultException:
 		/*    Page Fault Exception    */
-		kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) - 4);
 	    break;
 	default:
 	    cerr << "Unexpected user mode exception" << which << "\n";

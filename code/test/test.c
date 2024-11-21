@@ -6,9 +6,9 @@ main(){
     for(i = 0; i < MAX_SIZE; i++){
         // perform some opeations
         array[i] = i;   
-        PrintInt(i);
-        //sum += i;        
+        sum += i;        
     }
-    //PrintInt(sum);
+    PrintInt(sum);
     return 0;
 }
+

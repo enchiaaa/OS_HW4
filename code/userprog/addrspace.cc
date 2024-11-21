@@ -126,9 +126,9 @@ AddrSpace::Load(char *fileName)
 
     pageTable = new TranslationEntry[NumPhysPages];
     
+    if (noffH.code.size > 0) {
     for(unsigned int i=0, j=0; i<numPages; i++){
-
-        while(j<NumPhysPages && kernel->machine->usedPhyPage[j] == true)
+        while(j < NumPhysPages && kernel->machine->usedPhyPage[j] == true)
             j++;
 
         // main memory 夠用，存進去
@@ -139,19 +139,18 @@ AddrSpace::Load(char *fileName)
             pageTable[i].use = false;
             pageTable[i].dirty = false;
             pageTable[i].readOnly = false;
-            // copy in the code and data segments into memory
-	        if (noffH.code.size > 0) {
-        	    executable->ReadAt(&(kernel->machine->mainMemory[j*PageSize]), PageSize, noffH.code.inFileAddr+i*PageSize);
-            }
+            pageTable[i].count++;
+            // 將 page i 開始，大小為 PageSize 的 code 讀進 mainMemory 中
+            executable->ReadAt(&(kernel->machine->mainMemory[j * PageSize]), PageSize, noffH.code.inFileAddr + i * PageSize);
         }
         // main memory 不夠用，存到 virtual memory
         else{
             int idx = 0;
-            while(idx<NumPhysPages && kernel->machine->usedVirPage[idx] == true)
+            while(idx < NumPhysPages && kernel->machine->usedVirPage[idx] == true)
                 idx++;
             char* buffer;
             buffer = new char[PageSize];
-            executable->ReadAt(buffer, PageSize, noffH.code.inFileAddr + i * PageSize); // 將 page i 開始，大小為 PageSize 的 data 讀進 buffer 中
+            executable->ReadAt(buffer, PageSize, noffH.code.inFileAddr + i * PageSize); // 將 page i 開始，大小為 PageSize 的 code 讀進 buffer 中
             kernel->virtualMemory->WriteSector(idx, buffer);    // 將 data 存到 virtual memory
             kernel->machine->usedVirPage[idx] = true;
             pageTable[i].virtualPage = idx;
@@ -159,9 +158,11 @@ AddrSpace::Load(char *fileName)
             pageTable[i].use = false;
             pageTable[i].dirty = false;
             pageTable[i].readOnly = false;
+            pageTable[i].count++;
         }
-
     }
+    }
+
     if (noffH.initData.size > 0) {
             executable->ReadAt(&(kernel->machine->mainMemory[noffH.initData.virtualAddr]), noffH.initData.size, noffH.initData.inFileAddr);
     }

@@ -212,8 +212,24 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 	    return AddressErrorException;
 	} else if (!pageTable[vpn].valid) {
             /* 		Add Page fault code here		*/
+
         printf("page fault\n");
         kernel->stats->numPageFaults++;
+
+        int idx = 0;
+        while(idx < NumPhysPages && kernel->machine->usedPhyPage[idx] == true)
+            idx++;
+        if(idx < NumPhysPages){       // mainMemory 有空位
+
+        }
+        else{                       // mainMemory 沒有空位
+            if(kernel->vmType == FIFO){
+
+            }else {
+
+            }
+        }
+
 	}
 	entry = &pageTable[vpn];
     } else {
