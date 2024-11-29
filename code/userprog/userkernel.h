@@ -17,6 +17,7 @@
 #include "machine.h"
 #include "synchdisk.h"
 class SynchDisk;
+enum virtualMemoryType {FIFO_VM, LRU };
 class UserProgKernel : public ThreadedKernel {
   public:
     UserProgKernel(int argc, char **argv);
@@ -29,25 +30,19 @@ class UserProgKernel : public ThreadedKernel {
 
     void SelfTest();		// test whether kernel is working
 
-// These are public for notational convenience.
+  // These are public for notational convenience.
     Machine *machine;
     FileSystem *fileSystem;
+    SynchDisk* virtual_Mem;
+    virtualMemoryType vmType = FIFO_VM;
 
 #ifdef FILESYS
     SynchDisk *synchDisk;
 #endif // FILESYS
 
-  enum virtualMemoryType{FIFO, LRU};
-  SynchDisk* virtualMemory;
-  virtualMemoryType vmType = FIFO;
-
   private:
-    bool debugUserProg;		// single step user program
+  bool debugUserProg;		// single step user program
 	Thread* t[10];
-  int burstTime[10]={0};
-  int burstNum;
-  int prio[10]={0};
-  int prioNum;
 	char*	execfile[10];
 	int	execfileNum;
 };

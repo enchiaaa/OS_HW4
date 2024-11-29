@@ -9,7 +9,6 @@
 // Copyright (c) 1992-1996 The Regents of the University of California.
 // All rights reserved.  See copyright.h for copyright notice and limitation 
 // of liability and disclaimer of warranty provisions.
-
 #ifndef ADDRSPACE_H
 #define ADDRSPACE_H
 
@@ -26,7 +25,6 @@ class AddrSpace {
     ~AddrSpace();			// De-allocate an address space
 
     static bool usedPhyPage[NumPhysPages];
-
     void Execute(char *fileName);	// Run the the program
 					// stored in the file "executable"
 
@@ -34,7 +32,6 @@ class AddrSpace {
     void RestoreState();		// info on a context switch 
     //**G
     int ID;				// storing the acessing page
-
   private:
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!

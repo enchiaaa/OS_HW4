@@ -28,8 +28,8 @@
 //	endian machine, and we're now running on a big endian machine.
 //----------------------------------------------------------------------
 
-
 bool AddrSpace::usedPhyPage[NumPhysPages] = {0};
+
 
 static void 
 SwapHeader (NoffHeader *noffH)
@@ -57,9 +57,9 @@ SwapHeader (NoffHeader *noffH)
 
 AddrSpace::AddrSpace()
 {
-   //** G
-   ID = (kernel->machine->ID_num) + 1;
-   kernel->machine->ID_num = kernel->machine->ID_num + 1;
+    //** G
+    ID = (kernel->machine->ID_num) ++;
+    kernel->machine->ID_num = (kernel->machine->ID_num) ++;
     pageTable = new TranslationEntry[NumPhysPages];
     for (unsigned int i = 0; i < NumPhysPages; i++) {
 	pageTable[i].virtualPage = i;	// for now, virt page # = phys page #
@@ -83,8 +83,6 @@ AddrSpace::AddrSpace()
 
 AddrSpace::~AddrSpace()
 {
-   for(int i = 0; i < numPages; i++)
-        AddrSpace::usedPhyPage[pageTable[i].physicalPage] = false;
    delete pageTable;
 }
 
@@ -126,15 +124,16 @@ AddrSpace::Load(char *fileName)
 
     numPages = divRoundUp(size,PageSize);
 
-    pageTable = new TranslationEntry[NumPhysPages];
+    pageTable = new TranslationEntry[numPages];
     
     if (noffH.code.size > 0) {
     for(unsigned int i=0, j=0; i<numPages; i++){
         while(j < NumPhysPages && kernel->machine->usedPhyPage[j] == true)
             j++;
-
         // main memory 夠用，存進去
         if(j<NumPhysPages){
+            kernel->machine->PhyPageName[j] = ID;
+            kernel->machine->main_tab[j] = &pageTable[j];
             kernel->machine->usedPhyPage[j] = true;
             pageTable[i].physicalPage = j;
             pageTable[i].valid = true;
@@ -146,25 +145,25 @@ AddrSpace::Load(char *fileName)
             pageTable[i].ID =ID;
             // 將 page i 開始，大小為 PageSize 的 code 讀進 mainMemory 中
             executable->ReadAt(&(kernel->machine->mainMemory[j * PageSize]), PageSize, noffH.code.inFileAddr + i * PageSize);
+
         }
         // main memory 不夠用，存到 virtual memory
         else{
             int idx = 0;
-            while(idx < NumPhysPages && kernel->machine->usedVirPage[idx] == true)
+            while(kernel->machine->usedVirPage[idx] == true)
                 idx++;
             char* buffer;
             buffer = new char[PageSize];
             executable->ReadAt(buffer, PageSize, noffH.code.inFileAddr + i * PageSize); // 將 page i 開始，大小為 PageSize 的 code 讀進 buffer 中
-            kernel->virtualMemory->WriteSector(idx, buffer);    // 將 data 存到 virtual memory
             kernel->machine->usedVirPage[idx] = true;
             pageTable[i].virtualPage = idx;
             pageTable[i].valid = false;
             pageTable[i].use = false;
             pageTable[i].dirty = false;
             pageTable[i].readOnly = false;
-            pageTable[i].count++;
             //**G
             pageTable[i].ID =ID;
+            kernel->virtual_Mem->WriteSector(idx,buffer);
         }
     }
     }

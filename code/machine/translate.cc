@@ -31,7 +31,6 @@
 
 #include "copyright.h"
 #include "main.h"
-
 // Routines for converting Words and Short Words to and from the
 // simulated machine's format of little endian.  These end up
 // being NOPs when the host machine is also little endian (DEC and Intel).
@@ -181,7 +180,6 @@ Machine::WriteMem(int addr, int size, int value)
 // 	"writing" -- if TRUE, check the "read-only" bit in the TLB
 //----------------------------------------------------------------------
 // **G
-int Machine::f = 0;
 
 ExceptionType
 Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
@@ -190,13 +188,12 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
     unsigned int vpn, offset;
     TranslationEntry *entry;
     unsigned int pageFrame;
-    
     //**G
     int target; // add variable to store the target page that needs to be replaced
 
     DEBUG(dbgAddr, "\tTranslate " << virtAddr << (writing ? " , write" : " , read"));
 
-// check for alignment errors
+	// check for alignment errors
     if (((size == 4) && (virtAddr & 0x3)) || ((size == 2) && (virtAddr & 0x1))){
 	DEBUG(dbgAddr, "Alignment problem at " << virtAddr << ", size " << size);
 	return AddressErrorException;
@@ -206,72 +203,84 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
     ASSERT(tlb == NULL || pageTable == NULL);	
     ASSERT(tlb != NULL || pageTable != NULL);	
 
-// calculate the virtual page number, and offset within the page,
-// from the virtual address
+	// calculate the virtual page number, and offset within the page,
+	// from the virtual address
     vpn = (unsigned) virtAddr / PageSize;
     offset = (unsigned) virtAddr % PageSize;
     
     if (tlb == NULL) {		// => page table => vpn is index into table
-	if (vpn >= pageTableSize) {
-	    DEBUG(dbgAddr, "Illegal virtual page # " << virtAddr);
-	    return AddressErrorException;
-	} 
-	
-	else if (!pageTable[vpn].valid) 
-	{
-            /* 		Add Page fault code here		*/
+		if (vpn >= pageTableSize) {
+			DEBUG(dbgAddr, "Illegal virtual page # " << virtAddr);
+			return AddressErrorException;
+		} 
+		
+		else if (!pageTable[vpn].valid) 
+		{
+				/* 		Add Page fault code here		*/
 
-		printf("page fault\n");
-		kernel->stats->numPageFaults++;
+			printf("page fault\n");
+			kernel->stats->numPageFaults++;
+			int idx = 0;
+			while(idx < NumPhysPages && kernel->machine->usedPhyPage[idx] == true)
+				idx++;
+			cout << idx << ' ';
+			if(idx < NumPhysPages){       // mainMemory 有空位
+					char *buf; //save page temporary
+					buf = new char[PageSize];
+					kernel->machine->usedPhyPage[idx]=TRUE;
+					kernel->machine->PhyPageName[idx]=pageTable[vpn].ID;
+					kernel->machine->main_tab[idx]=&pageTable[vpn]; //let main
+					pageTable[vpn].physicalPage = idx; // pagetable addr to phy addr
+					pageTable[vpn].valid = TRUE; //read in mainmemory->valid
+					pageTable[vpn].count++; //lru
 
-		int idx = 0;
-		while(idx < NumPhysPages && kernel->machine->usedPhyPage[idx] == true)
-		    idx++;
-		if(idx < NumPhysPages){       // mainMemory 有空位
-
-		}
-        	else{                       // mainMemory 沒有空位
-			if(kernel->vmType == FIFO)
-			{
-				//**G - FIFO
-				target = f % NumPhysPages;
+					kernel->virtual_Mem->ReadSector(pageTable[vpn].virtualPage, buf); //read data to buffer
+					bcopy(buf,&mainMemory[idx*PageSize],PageSize);//write data to main memory
+					//won't cause unloaded data be read from memory, because they can be read
+					//from pagetable
 			}
-			else 
-			{
+			else{                       // mainMemory 沒有空位
+				if(kernel->vmType == FIFO_VM)
+				{
+					//**G - FIFO
+					target = fifo % NumPhysPages;
+					cout << "fifo: " << fifo << '\n';
+				}
+				char *buf_1;
+				buf_1 = new char[PageSize];
+				char *buf_2;
+				buf_2 = new char[PageSize];
 
-			}
-			    
-			//**G
-			printf("page %d swapped\n",target);
+				printf("Number = %d page swap out\n",target);
+
+				//get the page victm and save in the disk
+				bcopy(&mainMemory[target*PageSize],buf_1,PageSize);
+				kernel->virtual_Mem->ReadSector(pageTable[vpn].virtualPage, buf_2);
+				bcopy(buf_2,&mainMemory[target*PageSize],PageSize);
+				kernel->virtual_Mem->WriteSector(pageTable[vpn].virtualPage,buf_1);
+				
+				main_tab[target]->virtualPage=pageTable[vpn].virtualPage;
+				main_tab[target]->valid=FALSE;
+
+				
+				
+				//save the page into the main memory
 			
-			// Perform page replacement
-			if (pageTable[target].dirty) 
-			{
-				// Write the dirty page to disk
-				kernel->synchDisk->WriteSector(pageTable[target].virtualPage, &mainMemory[target * PageSize]);
+
+				pageTable[vpn].valid = TRUE;
+				pageTable[vpn].physicalPage=target;
+				kernel->machine->PhyPageName[target]=pageTable[vpn].ID;
+				main_tab[target]=&pageTable[vpn];
+			// fifo = fifo + 1;               //for fifo
+				printf("page replacement finished\n");
+				// Update the FIFO counter (only for FIFO)
+				if (kernel->vmType == FIFO_VM) 
+				{
+					fifo = (fifo + 1) % NumPhysPages;
+				}
 			}
 
-			// Update page table and physical memory
-			pageTable[target].valid = false;
-			pageTable[target].physicalPage = -1;
-			kernel->machine->usedPhyPage[target] = false;
-
-			// Load the new page into the freed frame
-			pageTable[vpn].valid = true;
-			pageTable[vpn].physicalPage = target;
-			kernel->machine->usedPhyPage[target] = true;
-			kernel->machine->PhyPageName[target] = pageTable[vpn].ID;
-			kernel->machine->main_tab[target] = &pageTable[vpn];
-			kernel->synchDisk->ReadSector(pageTable[vpn].virtualPage, &mainMemory[target * PageSize]);
-
-			// Update the FIFO counter (only for FIFO)
-			if (kernel->vmtype == FIFO) 
-			{
-				fifo = (fifo + 1) % NumPhysPages;
-			}
-		}
-
-}
+	}
 	entry = &pageTable[vpn];
     } else {
         for (entry = NULL, i = 0; i < TLBSize; i++)

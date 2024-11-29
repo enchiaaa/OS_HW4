@@ -22,15 +22,12 @@ UserProgKernel::UserProgKernel(int argc, char **argv)
 {
     debugUserProg = FALSE;
 	execfileNum=0;
-	burstNum=0;
-	prioNum=0;
     for (int i = 1; i < argc; i++) {
-			if (strcmp(argv[i], "-s") == 0) {
+		if (strcmp(argv[i], "-s") == 0) {
 			debugUserProg = TRUE;
 		}
 		else if (strcmp(argv[i], "-e") == 0) {
 			execfile[++execfileNum]= argv[i + 1];
-			// scheduler->ReadyToRun(new Thread(argv[i+1]));
 		}
 			else if (strcmp(argv[i], "-u") == 0) {
 			cout << "===========The following argument is defined in userkernel.cc" << endl;
@@ -46,19 +43,17 @@ UserProgKernel::UserProgKernel(int argc, char **argv)
 			cout << "	./nachos -s : Print machine status during the machine is on." << endl;
 			cout << "	./nachos -e file1 -e file2 : executing file1 and file2."  << endl;
 		}
-		else if(strcmp(argv[i], "-burst") == 0){
-			if (i + 1 < argc)
-				burstTime[++burstNum] = stoi(argv [i + 1]);
+		else if (strcmp(argv[i], "-FIFO") == 0)
+		{
+			this->vmType = FIFO_VM;
+			cout << "using FIFO mode" << endl;
 		}
-		else if(strcmp(argv[i], "-prio") == 0){
-			if (i + 1 < argc)
-				prio[++prioNum] = stoi(argv [i + 1]);
-		}else if(strcmp(argv[i], "-FIFO") == 0){
-			vmType = FIFO;
-		}else if(strcmp(argv[i], "-LRU") == 0){
-			vmType = LRU;
+		else if(strcmp(argv[i], "-LRU") == 0)
+		{
+			this ->vmType = LRU;
+			cout << "using LRU mode" << endl;
 		}
-	}
+    }
 }
 
 //----------------------------------------------------------------------
@@ -73,9 +68,10 @@ UserProgKernel::Initialize()
 
     machine = new Machine(debugUserProg);
     fileSystem = new FileSystem();
-	virtualMemory = new SynchDisk("Virtual Memory");
+    virtual_Mem = new SynchDisk("New SynchDisk");
+
 #ifdef FILESYS
-    synchDisk = new SynchDisk("New SynchDisk");
+	synchDisk = new SynchDisk("new synchdisk");
 #endif // FILESYS
 }
 
@@ -112,8 +108,6 @@ UserProgKernel::Run()
 	for (int n=1;n<=execfileNum;n++)
 		{
 		t[n] = new Thread(execfile[n]);
-		t[n]->setBurstTime(burstTime[n]);
-		t[n]->setPriority(prio[n]);
 		t[n]->space = new AddrSpace();
 		t[n]->Fork((VoidFunctionPtr) &ForkExecute, (void *)t[n]);
 		cout << "Thread " << execfile[n] << " is executing." << endl;
