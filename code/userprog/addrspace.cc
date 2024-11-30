@@ -69,7 +69,8 @@ AddrSpace::AddrSpace()
 //	pageTable[i].valid = FALSE;
 	pageTable[i].use = FALSE;
 	pageTable[i].dirty = FALSE;
-	pageTable[i].readOnly = FALSE;  
+	pageTable[i].readOnly = FALSE;
+    pageTable[i].count = 500;  
     }
 
     // zero out the entire address space
@@ -83,10 +84,13 @@ AddrSpace::AddrSpace()
 
 AddrSpace::~AddrSpace()
 {
-   delete pageTable;
+    for(int i = 0; i < numPages; i++)
+    {
+        AddrSpace::usedPhyPage[pageTable[i].physicalPage] = false;
+    }
+    delete pageTable;
+
 }
-
-
 //----------------------------------------------------------------------
 // AddrSpace::Load
 // 	Load a user program into memory from a file.
@@ -122,18 +126,17 @@ AddrSpace::Load(char *fileName)
 //	cout << "number of pages of " << fileName<< " is "<<numPages<<endl;
     size = numPages * PageSize;
 
-    numPages = divRoundUp(size,PageSize);
-
     pageTable = new TranslationEntry[numPages];
     
     if (noffH.code.size > 0) {
     for(unsigned int i=0, j=0; i<numPages; i++){
+        j = 0;
         while(j < NumPhysPages && kernel->machine->usedPhyPage[j] == true)
             j++;
         // main memory 夠用，存進去
         if(j<NumPhysPages){
             kernel->machine->PhyPageName[j] = ID;
-            kernel->machine->main_tab[j] = &pageTable[j];
+            kernel->machine->main_tab[j] = &pageTable[i];
             kernel->machine->usedPhyPage[j] = true;
             pageTable[i].physicalPage = j;
             pageTable[i].valid = true;
@@ -208,6 +211,7 @@ AddrSpace::Load(char *fileName)
 void 
 AddrSpace::Execute(char *fileName) 
 {
+    pageTableLoaded = false;
     if (!Load(fileName)) {
 	cout << "inside !Load(FileName)" << endl;
 	return;				// executable not found
@@ -218,7 +222,7 @@ AddrSpace::Execute(char *fileName)
     this->RestoreState();		// load page table register
 
     kernel->machine->Run();		// jump to the user progam
-
+    pageTableLoaded = true;
     ASSERTNOTREACHED();			// machine->Run never returns;
 					// the address space exits
 					// by doing the syscall "exit"
@@ -268,8 +272,12 @@ AddrSpace::InitRegisters()
 
 void AddrSpace::SaveState() 
 {
+    if(pageTableLoaded)
+    {
         pageTable=kernel->machine->pageTable;
         numPages=kernel->machine->pageTableSize;
+    }
+
 }
 
 //----------------------------------------------------------------------

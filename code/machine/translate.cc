@@ -223,7 +223,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 			int idx = 0;
 			while(idx < NumPhysPages && kernel->machine->usedPhyPage[idx] == true)
 				idx++;
-			cout << idx << ' ';
+			//cout << idx << ' ';
 			if(idx < NumPhysPages){       // mainMemory 有空位
 					char *buf; //save page temporary
 					buf = new char[PageSize];
@@ -244,7 +244,22 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				{
 					//**G - FIFO
 					target = fifo % NumPhysPages;
-					cout << "fifo: " << fifo << '\n';
+					//cout << "fifo: " << fifo << '\n';
+				}
+				if(kernel->vmType == LRU)
+				{
+					int min_count = pageTable[0].count;
+					target = 0;
+					for(int i = 1; i < NumPhysPages; i++)
+					{
+						cout << "count: " << pageTable[i].count << '\n';
+						if(pageTable[i].count < min_count)
+						{
+							min_count = pageTable[i].count;
+							target = i;
+						}
+					}
+					pageTable[target].count++;
 				}
 				char *buf_1;
 				buf_1 = new char[PageSize];
