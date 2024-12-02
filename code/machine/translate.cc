@@ -232,7 +232,9 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 					kernel->machine->main_tab[idx]=&pageTable[vpn]; //let main
 					pageTable[vpn].physicalPage = idx; // pagetable addr to phy addr
 					pageTable[vpn].valid = TRUE; //read in mainmemory->valid
-					pageTable[vpn].count++; //lru
+					// lru
+					kernel->machine->COUNT++;
+					pageTable[vpn].count = kernel->machine->COUNT; 
 
 					kernel->virtual_Mem->ReadSector(pageTable[vpn].virtualPage, buf); //read data to buffer
 					bcopy(buf,&mainMemory[idx*PageSize],PageSize);//write data to main memory
@@ -250,16 +252,23 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				{
 					int min_count = pageTable[0].count;
 					target = 0;
+
+					for(int i = 0; i < NumPhysPages; i++){
+						cout << "page " << i << "'s count: " << pageTable[i].count << '\n';
+					}
+
 					for(int i = 1; i < NumPhysPages; i++)
 					{
-						// cout << "count: " << pageTable[i].count << '\n';
 						if(pageTable[i].count < min_count)
 						{
 							min_count = pageTable[i].count;
 							target = i;
 						}
 					}
-					pageTable[target].count++;
+					kernel->machine->COUNT++;
+					pageTable[target].count = kernel->machine->COUNT;
+					cout << "NOW COUNT: " << kernel->machine->COUNT << endl;
+					
 				}
 				char *buf_1;
 				buf_1 = new char[PageSize];
@@ -267,6 +276,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				buf_2 = new char[PageSize];
 
 				printf("page %d swapped\n",target);
+				cout << "-------------------------\n";
 
 				//get the page victm and save in the disk
 				bcopy(&mainMemory[target*PageSize],buf_1,PageSize);
@@ -294,9 +304,12 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 					fifo = (fifo + 1) % NumPhysPages;
 				}
 			}
-
-	}
-	entry = &pageTable[vpn];
+			
+		}else{
+				kernel->machine->COUNT++;
+				pageTable[vpn].count = kernel->machine->COUNT;
+		}
+		entry = &pageTable[vpn];
     } else {
         for (entry = NULL, i = 0; i < TLBSize; i++)
     	    if (tlb[i].valid && (tlb[i].virtualPage == vpn)) {

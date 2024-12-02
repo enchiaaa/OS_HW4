@@ -70,7 +70,7 @@ AddrSpace::AddrSpace()
 	pageTable[i].use = FALSE;
 	pageTable[i].dirty = FALSE;
 	pageTable[i].readOnly = FALSE;
-    pageTable[i].count = 500;  
+    pageTable[i].count = 0;  
     }
 
     // zero out the entire address space
@@ -143,12 +143,13 @@ AddrSpace::Load(char *fileName)
             pageTable[i].use = false;
             pageTable[i].dirty = false;
             pageTable[i].readOnly = false;
-            pageTable[i].count++;
+            kernel->machine->COUNT++;
+			pageTable[i].count = kernel->machine->COUNT;
             //**G
             pageTable[i].ID =ID;
             // 將 page i 開始，大小為 PageSize 的 code 讀進 mainMemory 中
             executable->ReadAt(&(kernel->machine->mainMemory[j * PageSize]), PageSize, noffH.code.inFileAddr + i * PageSize);
-
+            
         }
         // main memory 不夠用，存到 virtual memory
         else{
@@ -168,6 +169,7 @@ AddrSpace::Load(char *fileName)
             pageTable[i].ID =ID;
             kernel->virtual_Mem->WriteSector(idx,buffer);
         }
+        // cout << "Load " << i << " NOW COUNT: " << kernel->machine->COUNT << endl;
     }
     }
 
