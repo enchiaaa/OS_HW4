@@ -252,7 +252,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 					target = 0;
 					for(int i = 1; i < NumPhysPages; i++)
 					{
-						cout << "count: " << pageTable[i].count << '\n';
+						// cout << "count: " << pageTable[i].count << '\n';
 						if(pageTable[i].count < min_count)
 						{
 							min_count = pageTable[i].count;
@@ -266,7 +266,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				char *buf_2;
 				buf_2 = new char[PageSize];
 
-				printf("Number = %d page swap out\n",target);
+				printf("page %d swapped\n",target);
 
 				//get the page victm and save in the disk
 				bcopy(&mainMemory[target*PageSize],buf_1,PageSize);
@@ -287,7 +287,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				kernel->machine->PhyPageName[target]=pageTable[vpn].ID;
 				main_tab[target]=&pageTable[vpn];
 			// fifo = fifo + 1;               //for fifo
-				printf("page replacement finished\n");
+				// printf("page replacement finished\n");
 				// Update the FIFO counter (only for FIFO)
 				if (kernel->vmType == FIFO_VM) 
 				{
