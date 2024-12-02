@@ -40,7 +40,7 @@ class TranslationEntry {
 			// page is referenced or modified.
     bool dirty;         // This bit is set by the hardware every time the
 			// page is modified.
-    int count;          // 紀錄被使用的次數(LRU)
+    unsigned long long count;         // 紀錄上次被使用的時間
     //**G
     int ID;
 };

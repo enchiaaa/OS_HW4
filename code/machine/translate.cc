@@ -287,11 +287,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				main_tab[target]->virtualPage=pageTable[vpn].virtualPage;
 				main_tab[target]->valid=FALSE;
 
-				
-				
 				//save the page into the main memory
-			
-
 				pageTable[vpn].valid = TRUE;
 				pageTable[vpn].physicalPage=target;
 				kernel->machine->PhyPageName[target]=pageTable[vpn].ID;
