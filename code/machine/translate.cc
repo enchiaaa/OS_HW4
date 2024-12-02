@@ -252,10 +252,10 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				{
 					int min_count = pageTable[0].count;
 					target = 0;
-
+					/*
 					for(int i = 0; i < NumPhysPages; i++){
 						cout << "page " << i << "'s count: " << pageTable[i].count << '\n';
-					}
+					}*/
 
 					for(int i = 1; i < NumPhysPages; i++)
 					{
@@ -267,7 +267,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 					}
 					kernel->machine->COUNT++;
 					pageTable[target].count = kernel->machine->COUNT;
-					cout << "NOW COUNT: " << kernel->machine->COUNT << endl;
+					// cout << "NOW COUNT: " << kernel->machine->COUNT << endl;
 					
 				}
 				char *buf_1;
@@ -276,7 +276,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				buf_2 = new char[PageSize];
 
 				printf("page %d swapped\n",target);
-				cout << "-------------------------\n";
+				// cout << "-------------------------\n";
 
 				//get the page victm and save in the disk
 				bcopy(&mainMemory[target*PageSize],buf_1,PageSize);
@@ -305,7 +305,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 				}
 			}
 			
-		}else{
+		}else{	// if pageTable[vpn].valid
 				kernel->machine->COUNT++;
 				pageTable[vpn].count = kernel->machine->COUNT;
 		}

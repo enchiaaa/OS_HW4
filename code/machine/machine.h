@@ -134,7 +134,7 @@ class Machine {
 	bool usedVirPage[NumPhysPages];
 	//**G
 	int PhyPageName[NumPhysPages];	
-	static unsigned long long COUNT;
+	static unsigned long long COUNT;	// for LRU
 	TranslationEntry* main_tab[NumPhysPages];
     unsigned int pageTableSize;
     bool ReadMem(int addr, int size, int* value);

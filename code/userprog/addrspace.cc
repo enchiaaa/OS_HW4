@@ -149,7 +149,7 @@ AddrSpace::Load(char *fileName)
             pageTable[i].ID =ID;
             // 將 page i 開始，大小為 PageSize 的 code 讀進 mainMemory 中
             executable->ReadAt(&(kernel->machine->mainMemory[j * PageSize]), PageSize, noffH.code.inFileAddr + i * PageSize);
-            
+
         }
         // main memory 不夠用，存到 virtual memory
         else{
@@ -169,7 +169,6 @@ AddrSpace::Load(char *fileName)
             pageTable[i].ID =ID;
             kernel->virtual_Mem->WriteSector(idx,buffer);
         }
-        // cout << "Load " << i << " NOW COUNT: " << kernel->machine->COUNT << endl;
     }
     }
 
